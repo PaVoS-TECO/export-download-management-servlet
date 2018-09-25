@@ -39,19 +39,9 @@ public class ManagementServlet extends HttpServlet {
 		}
 		
 		if (this.parameters.contains("requestType")) {
-			
+
+            res.setContentType("text/plain");
 			String type = req.getParameter("requestType");
-			
-			if (type.equals("setIDReady")) {
-				AlterableDownloadState ads = new AlterableDownloadState(req.getParameter("downloadID"));
-				ads.setFileReadyForDownload();
-				String path = "/usr/pke/exports/" + ads.getID() + ".csv";
-				ads.setFilePath(new File(path));
-				ads.savePersistent();
-				PrintWriter writer = res.getWriter();
-				writer.println(ads.getDownloadState());
-				writer.close();
-			}
 			
 			if (type.equals("newExport")) {
 				
@@ -96,16 +86,35 @@ public class ManagementServlet extends HttpServlet {
 			if (ready.equals("noID") || ready.equals("error")) {
 				
 				String ext = req.getParameter("extension");
+				String lExt = ext.toLowerCase();
 				String tf = req.getParameter("timeFrame");
 				String ops = req.getParameter("observedProperties");
 				String cIDs = req.getParameter("clusters");
 				
-				Runtime.getRuntime().exec("java -jar /usr/pke/pke.jar "
-						+ ext + " "
-						+ tf + " "
-						+ ops + " "
-						+ cIDs + " "
-						+ dID);
+				try {
+					
+					Runtime.getRuntime().exec("java -jar /usr/pke/pke.jar "
+							+ lExt + " "
+							+ tf + " "
+							+ ops + " "
+							+ cIDs + " "
+							+ dID);
+					
+				} catch (IOException e) {
+
+					res.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+					
+				}
+				
+				PrintWriter writer = res.getWriter();
+				writer.println("started");
+				writer.close();
+				
+			} else {
+				
+				PrintWriter writer = res.getWriter();
+				writer.println("duplicate");
+				writer.close();
 				
 			}
 			
@@ -148,9 +157,7 @@ public class ManagementServlet extends HttpServlet {
 			
 			if (!ready.equals("true")) {
 				
-				PrintWriter writer = res.getWriter();
-				writer.println(ready);
-				writer.close();
+				res.sendError(HttpServletResponse.SC_CONFLICT);
 				
 			} else {
 				
@@ -170,18 +177,14 @@ public class ManagementServlet extends HttpServlet {
 			            
 					} catch (IOException e) {
 						
-						PrintWriter writer = res.getWriter();
-						writer.println("error");
-						writer.close();
+						res.sendError(HttpServletResponse.SC_CONFLICT);
 						
 					}
 		            
 					
 				} else {
 					
-					PrintWriter writer = res.getWriter();
-					writer.println("error");
-					writer.close();
+					res.sendError(HttpServletResponse.SC_CONFLICT);
 					
 				}
 	            
